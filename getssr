@@ -1,0 +1,37 @@
+#!/usr/bin/python3
+import requests
+from pyquery import PyQuery as pq
+import re
+import base64
+import json
+def decode(src):
+    if len(src) % 4:
+        src += (4 - len(src) % 4) * '='
+    return base64.b64decode(src).decode()
+res = requests.get("https://doub.bid/sszhfx/")
+root = pq(res.text)
+sss = root('table').eq(0)('tr')
+for ss in sss.items():
+    if not ss('td').eq(1)('del'):
+        url = ss('td').eq(6)('.dl1').attr('href')
+        if url:
+            cc = re.search("((ssr?)://)?([\w/+]*={0,2})$", url)
+            print(ss('td').eq(0).text(), end='\t')
+            print(cc.group(2))
+            code = decode(cc.group(3))
+            config = {}
+            if cc.group(2) == 'ssr':
+                data = re.search('(.+):(.+):.+:(.+):.+:(.+)/\?remarks=(.+)', code)
+                config['server'] = data.group(1)
+                config['server_port'] = int(data.group(2))
+                config['password'] = decode(data.group(4))
+                config['method'] = data.group(3)
+            elif cc.group(2) == 'ss':
+                data = re.search('(.*):(.*)@(.*):(\d*)', code)
+                config['server'] = data.group(3)
+                config['server_port'] = int(data.group(4))
+                config['password'] = data.group(2)
+                config['method'] = data.group(1)
+            else:
+                print(code)
+            print(json.dumps(config))
